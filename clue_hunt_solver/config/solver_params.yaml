@@ -1,0 +1,18 @@
+hunt_node:
+  ros__parameters:
+    confirmation_frames: 2
+    marker_length: 0.24
+    search_angular_speed: 0.36
+    board_standoff: 0.85
+    process_period: 0.18
+    navigation_timeout: 55.0
+
+follower_node:
+  ros__parameters:
+    desired_distance: 1.15
+    minimum_distance: 0.75
+    maximum_linear_speed: 0.40
+    maximum_angular_speed: 0.90
+    linear_gain: 0.75
+    angular_gain: 1.80
+    lost_timeout: 1.20

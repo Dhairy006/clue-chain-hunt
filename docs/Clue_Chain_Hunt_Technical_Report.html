@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Clue Chain Hunt - Technical Report</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#dfe5eb; color:#172232; font-family:"Segoe UI",Arial,sans-serif; }
+  .page { width:210mm; height:297mm; margin:7mm auto; padding:11mm 14mm 12mm; background:#fff; position:relative; overflow:hidden; page-break-after:always; box-shadow:0 2px 10px #85909b; }
+  .page:last-child { page-break-after:auto; }
+  .header { display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #0b6d78; padding-bottom:2mm; margin-bottom:3mm; }
+  .brand { font-weight:700; color:#0b6d78; letter-spacing:.3px; }
+  .meta,.footer { font-size:7.6pt; color:#677582; }
+  h1 { color:#093b52; font-size:23pt; line-height:1.08; margin:0 0 2mm; }
+  h2 { color:#0b6d78; font-size:13.2pt; margin:3.2mm 0 1.5mm; border-left:4px solid #e7a627; padding-left:2.5mm; }
+  h3 { color:#174f67; font-size:9.6pt; margin:2.2mm 0 1mm; }
+  p,li { font-size:8.35pt; line-height:1.22; margin-top:0; }
+  p { margin-bottom:1.6mm; text-align:justify; }
+  ul { margin:1mm 0 2mm 4mm; padding-left:4mm; }
+  li { margin-bottom:.7mm; }
+  table { width:100%; border-collapse:collapse; margin:1.4mm 0 2.2mm; font-size:7.7pt; }
+  th { background:#0b6d78; color:#fff; text-align:left; padding:1.4mm 1.7mm; }
+  td { border:1px solid #c8d2da; padding:1.15mm 1.5mm; vertical-align:top; line-height:1.18; }
+  tr:nth-child(even) td { background:#f4f7f8; }
+  code { font-family:Consolas,monospace; background:#edf2f5; padding:.1mm .5mm; border-radius:2px; font-size:7.55pt; }
+  pre { font:7.4pt/1.22 Consolas,monospace; background:#142431; color:#e9f4f6; padding:2.2mm; border-radius:3px; margin:1.5mm 0 2mm; white-space:pre-wrap; }
+  .lead { font-size:9.5pt; line-height:1.32; color:#314757; }
+  .callout { background:#eef7f7; border-left:4px solid #0b6d78; padding:2.2mm 3mm; margin:2mm 0; font-size:8.2pt; }
+  .warning { background:#fff7e8; border-left-color:#e7a627; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:3mm; }
+  .card { border:1px solid #ccd7de; border-radius:4px; padding:2.2mm; background:#fafcfd; }
+  .card h3 { margin-top:0; }
+  .flow { display:flex; align-items:stretch; gap:1.2mm; margin:1.7mm 0 2.2mm; }
+  .flow .box { flex:1; background:#eaf4f5; border:1px solid #62a6ad; border-radius:4px; padding:1.8mm 1mm; text-align:center; font-size:7.2pt; font-weight:600; }
+  .flow .arrow { align-self:center; color:#e29b16; font-weight:800; }
+  .formula { text-align:center; background:#f3f6f8; border:1px solid #d3dde3; padding:2mm; margin:1.5mm 0 2mm; font:8pt Consolas,monospace; }
+  .status-ok { color:#137044; font-weight:700; }
+  .footer { position:absolute; bottom:5mm; left:14mm; right:14mm; display:flex; justify-content:space-between; border-top:1px solid #d4dce2; padding-top:1.4mm; }
+  .title-block { background:linear-gradient(135deg,#08394f,#0b6d78); color:#fff; padding:7mm; margin:2mm 0 3mm; border-radius:6px; }
+  .title-block h1 { color:#fff; }
+  .title-block .subtitle { font-size:10.5pt; color:#d9f1f2; margin:0; }
+  figure { margin:1.5mm 0 2mm; }
+  figure img { width:100%; display:block; border:1px solid #bcc9d1; border-radius:3px; object-fit:cover; }
+  figcaption { font-size:7pt; line-height:1.17; color:#596976; margin-top:.8mm; }
+  .hero img { height:55mm; object-position:center 39%; }
+  .shot img { height:50mm; object-position:center; }
+  .shot-sm img { height:35mm; object-position:center; }
+  .failure img { height:30mm; object-position:center; }
+  .badge { display:inline-block; border-radius:9px; padding:.5mm 1.6mm; color:white; background:#0b6d78; font-size:7.2pt; font-weight:700; }
+  @media print { body{background:#fff}.page{margin:0;box-shadow:none} }
+</style>
+</head>
+<body>
+
+<section class="page">
+  <div class="header"><div class="brand">CLUE CHAIN HUNT</div><div class="meta">ROS 2 Humble | Gazebo Fortress | Nav2 | OpenCV</div></div>
+  <div class="title-block">
+    <h1>Autonomous Leader-Follower<br>Clue Hunt System</h1>
+    <p class="subtitle">Technical Report and Deliverables Summary</p>
+    <p style="margin:3mm 0 0;color:#d9f1f2;text-align:left">GitHub: Dhairy006 &nbsp; | &nbsp; Date: 8 October 2026</p>
+  </div>
+  <h2>1. Problem and objective</h2>
+  <p class="lead">The challenge requires two differential-drive robots to complete a visual treasure hunt autonomously. The leader must map/localize, authenticate a chain of QR and ArUco clues, reject decoys, resolve each clue into a map target, and navigate to the treasure. The follower must trail safely using only its own camera, wheel odometry and namespaced TF.</p>
+  <p>Each board carries a DICT_4X4_50 ArUco marker and QR payload. The payload gives a board identity, a chained SHA-1 token, and one of four target forms: absolute map coordinate, coloured pillar, interpolation between pillars, or displacement in the board frame. Hidden evaluation worlds may move boards and treasure, swap pillar colours and change lighting, so target positions are not hard-coded and Gazebo ground truth is never read.</p>
+  <div class="callout"><b>Main objective.</b> Build a general perception-localization-planning pipeline that converts authenticated visual clues into collision-aware motion, while a completely independent follower maintains a safe 0.6-2.0 m separation.</div>
+  <figure class="hero"><img src="screenshots/hunt.png" alt="RViz hunt and treasure evidence"><figcaption><b>Figure 1.</b> Integrated RViz view during the hunt: occupancy map, leader pose, visualized clue targets, camera feeds and the yellow treasure disc.</figcaption></figure>
+  <h2>2. Required outputs</h2>
+  <table>
+    <tr><th>Output</th><th>Interface</th><th>Implemented behaviour</th></tr>
+    <tr><td>Authenticated clues</td><td><code>/hunt/clues</code> - String</td><td>Full accepted QR payload, emitted once in chain order.</td></tr>
+    <tr><td>Board locations</td><td><code>/hunt/boards</code> - String</td><td>Accepted board ID and estimated map coordinates.</td></tr>
+    <tr><td>Treasure result</td><td><code>/hunt/treasure</code> - PoseStamped</td><td>Final calculated map pose, published once after arrival.</td></tr>
+    <tr><td>Follower motion</td><td><code>/follower/cmd_vel</code> - Twist</td><td>Camera/odometry-only pursuit with range and loss safeguards.</td></tr>
+    <tr><td>Entry point</td><td><code>hunt.launch.py</code></td><td>Starts both custom nodes and shared parameters.</td></tr>
+  </table>
+  <div class="footer"><span>Autonomous Leader-Follower Clue Hunt</span><span>Page 1 of 5</span></div>
+</section>
+
+<section class="page">
+  <div class="header"><div class="brand">SYSTEM DESIGN</div><div class="meta">Architecture, frames and execution flow</div></div>
+  <h2>3. Architecture</h2>
+  <div class="flow"><div class="box">Leader camera<br>+ CameraInfo</div><div class="arrow">-&gt;</div><div class="box">ArUco + QR<br>perception</div><div class="arrow">-&gt;</div><div class="box">Chain<br>validation</div><div class="arrow">-&gt;</div><div class="box">Map target<br>resolution</div><div class="arrow">-&gt;</div><div class="box">Nav2<br>goal</div></div>
+  <div class="flow"><div class="box">Follower camera</div><div class="arrow">-&gt;</div><div class="box">Leader tag 49<br>pose</div><div class="arrow">-&gt;</div><div class="box">Observed trail<br>in follower/odom</div><div class="arrow">-&gt;</div><div class="box">Safe velocity<br>controller</div></div>
+  <table>
+    <tr><th>Node</th><th>Subscriptions</th><th>Publications / actions</th></tr>
+    <tr><td><code>hunt_node</code></td><td><code>/camera/image_raw</code>, CameraInfo, <code>/scan</code>, <code>/map</code>, TF</td><td>Required hunt topics, markers, <code>/cmd_vel</code>, Nav2 action goals</td></tr>
+    <tr><td><code>follower_node</code></td><td>Only <code>/follower/camera/*</code>, <code>/follower/odom</code>, follower TF</td><td><code>/follower/cmd_vel</code>, <code>/follower/range</code>, <code>/follower/path</code></td></tr>
+  </table>
+  <p>The leader uses <code>map -&gt; odom -&gt; base_footprint -&gt; cam_optical_link</code>. OpenCV estimates each marker in the optical frame and TF2 converts it to <code>map</code>. The board convention is +X outward from the face, +Z upward and +Y to the reader's right. The follower remains in <code>follower/odom</code> and never consumes leader topics, poses, paths, odometry, status or Gazebo ground truth.</p>
+  <h2>4. Runtime state machine</h2>
+  <table>
+    <tr><th>State</th><th>Function and transition</th></tr>
+    <tr><td><code>SEARCHING</code></td><td>Rotate/reposition to acquire the expected board and QR; exploration points are derived from free cells in <code>/map</code>.</td></tr>
+    <tr><td><code>READING</code></td><td>Require repeated matching frames, authenticate chain, then publish clue and board pose.</td></tr>
+    <tr><td><code>LOCATING_PILLARS</code></td><td>Accumulate stable red/green/blue ground-plane estimates.</td></tr>
+    <tr><td><code>WAITING_NAV / MOVING</code></td><td>Wait for Nav2, send goal, monitor result, cancel after a 55 s timeout and recover locally.</td></tr>
+    <tr><td><code>DONE</code></td><td>Publish treasure pose once and stop the leader; follower independently settles by range regulation.</td></tr>
+  </table>
+  <figure class="shot"><img src="screenshots/map.png" alt="Saved occupancy map in RViz"><figcaption><b>Figure 2.</b> Clean full-arena occupancy map in RViz. Walls, the central divider and obstacles are distinct without the duplicated geometry that caused early Nav2 failures.</figcaption></figure>
+  <h2>5. Deployment</h2>
+  <p>The supplied simulator/description packages remain read-only. A saved map is produced with SLAM Toolbox; AMCL localizes the leader; Nav2 owns collision-aware motion. <code>autonomy.launch.py</code> combines local simulation, saved-map navigation, RViz and the solver. <code>hunt.launch.py</code> is the evaluator entry point when simulation and Nav2 are already running.</p>
+  <div class="footer"><span>Autonomous Leader-Follower Clue Hunt</span><span>Page 2 of 5</span></div>
+</section>
+
+<section class="page">
+  <div class="header"><div class="brand">LEADER AUTONOMY</div><div class="meta">Perception, authentication, geometry and navigation</div></div>
+  <h2>6. Visual perception and authentication</h2>
+  <p>Calibrated BGR frames are searched for DICT_4X4_50 markers. The 0.24 m board marker pose is estimated with <code>solvePnP</code>. ZBar is the primary QR decoder because Ubuntu's packaged OpenCV may lack QUIRC; OpenCV is retained as fallback. A perspective-rectified region next to the marker improves small and oblique QR reads.</p>
+  <div class="formula">token = UPPERCASE(SHA1(previous_valid_clue)[0:4])<br>Board 1 starts with previous_valid_clue = "START", producing 7196</div>
+  <p>A clue is accepted only when the marker ID equals the next expected sequence number, the four-character token matches, the grammar and numeric values are valid, and two consecutive observations agree. These gates reject wrong-ID decoys, same-ID look-alikes and transient false decodes.</p>
+  <h2>7. Target calculation</h2>
+  <table>
+    <tr><th>Command</th><th>Map target calculation</th></tr>
+    <tr><td><code>GOTO x y</code></td><td>Direct map coordinate; permitted for the starting clue.</td></tr>
+    <tr><td><code>PILLAR C</code></td><td>HSV-segment colour C, cast the bottom-pixel camera ray to the map ground plane, retain a temporal median.</td></tr>
+    <tr><td><code>BETWEEN A B f</code></td><td><code>A + f(B - A)</code> from independently observed pillar centres.</td></tr>
+    <tr><td><code>REL a b</code></td><td>Transform board-frame homogeneous point <code>[a,b,0,1]</code> by the detected board pose in map.</td></tr>
+    <tr><td><code>TREASURE REL a b</code></td><td>Apply the relative transform, navigate to tolerance, then publish one map-frame pose.</td></tr>
+  </table>
+  <p>Red, green and blue masks undergo morphology and contour filtering. A pillar estimate requires at least three consistent samples; observations farther than 0.9 m from the current median are rejected. For boards, an 0.85 m standoff preserves camera visibility.</p>
+  <h2>8. Navigation and search</h2>
+  <p>The leader sends <code>NavigateToPose</code> goals. Goal yaw follows travel direction instead of forcing zero heading. After reaching a clue neighbourhood it rotates, then can visit up to eight map-validated orbit points. If a goal stalls, a 55 s watchdog cancels it and selects another search pose. The occupancy grid supplies safe exploration points rather than hidden coordinates.</p>
+  <figure class="shot"><img src="screenshots/hunt.png" alt="Hunt visualization"><figcaption><b>Figure 3.</b> Hunt integration view: visual targets are published as RViz markers, the leader is localized in the saved map, and the leader camera observes the final treasure area.</figcaption></figure>
+  <div class="callout"><b>Validation result.</b> Unit and perception tests pass. Integrated arena trials verify camera rendering, authenticated clue processing, map localization, collision-aware plan generation, robot motion and RViz visualization.</div>
+  <div class="footer"><span>Autonomous Leader-Follower Clue Hunt</span><span>Page 3 of 5</span></div>
+</section>
+
+<section class="page">
+  <div class="header"><div class="brand">FOLLOWER & VERIFICATION</div><div class="meta">Independent following, safety and evidence</div></div>
+  <h2>9. Follower design</h2>
+  <p>The follower detects the leader's rear DICT_4X4_50 marker ID 49 (0.12 m side). Pose estimation gives range and horizontal bearing. Each valid observation is transformed into <code>follower/odom</code> and appended to a spatial trail. Following historical points reduces corner-cutting compared with always driving directly at the current leader pose.</p>
+  <div class="grid2"><div class="card"><h3>Control</h3><p>Proportional heading and range errors generate bounded angular and forward velocity. Camera bearing is the fallback if no trail waypoint is available.</p></div><div class="card"><h3>Safety</h3><p>Target range is 1.15 m; forward motion stops at 0.75 m, providing 0.15 m margin over the required 0.6 m minimum. Large pose jumps are rejected and prolonged tag loss commands zero velocity.</p></div></div>
+  <p>No leader status is used. If <code>/leader/status</code> is absent, behaviour is unchanged: the follower stops on its own when range regulation is satisfied or the rear tag is lost. This preserves the problem statement's strict sensor-independence rule.</p>
+  <figure class="shot"><img src="screenshots/follower.png" alt="Follower camera tracking leader"><figcaption><b>Figure 4.</b> Follower evidence. The follower camera sees the leader's rear fiducial while RViz displays a collision-aware leader plan. The follower's controller uses only this camera observation and its own odometry.</figcaption></figure>
+  <h2>10. Software and tests</h2>
+  <table>
+    <tr><th>Component / test</th><th>Evidence</th><th>Status</th></tr>
+    <tr><td><code>hunt_node.py</code></td><td>State machine, TF localization, pillar estimation, Nav2 action goals, required publications.</td><td class="status-ok">IMPLEMENTED</td></tr>
+    <tr><td><code>follower_node.py</code></td><td>Marker tracking, follower-odometry trail, safe controller; no leader subscription.</td><td class="status-ok">IMPLEMENTED</td></tr>
+    <tr><td>Clue grammar and chain</td><td>All practice commands accepted; invalid data and wrong-token board rejected.</td><td class="status-ok">PASS</td></tr>
+    <tr><td>Practice textures</td><td>Seven supplied textures yield expected ArUco IDs and QR prefixes using ZBar.</td><td class="status-ok">PASS</td></tr>
+    <tr><td>Syntax/package assets</td><td>Python compilation and package-data checks complete; saved map included.</td><td class="status-ok">PASS</td></tr>
+    <tr><td>Integrated autonomy pipeline</td><td>Perception, clue state machine, map localization, Nav2 planning/motion, RViz markers and follower tracking exercised in the practice arena.</td><td class="status-ok">VERIFIED</td></tr>
+  </table>
+  <h3>Diagnostic/bonus visualization</h3>
+  <p><code>/hunt/markers</code> visualizes accepted boards, pillars and treasure; <code>/follower/path</code> visualizes the follower-only odometry trail. The reproducible baseline uses the submitted saved map, while RViz presents perception, planning and follower diagnostics during execution.</p>
+  <div class="footer"><span>Autonomous Leader-Follower Clue Hunt</span><span>Page 4 of 5</span></div>
+</section>
+
+<section class="page">
+  <div class="header"><div class="brand">DELIVERY & FAILURES</div><div class="meta">Operation, contents and lessons learned</div></div>
+  <h2>11. Build and launch</h2>
+  <div class="grid2"><div><pre>cd ~/hunt_ws
+source /opt/ros/humble/setup.bash
+sudo apt install -y python3-pyzbar libzbar0
+rosdep install --from-paths src --ignore-src -r -y
+colcon build --symlink-install --packages-select clue_hunt_solver
+source install/setup.bash</pre></div><div><pre># Evaluator-managed simulator/Nav2
+ros2 launch clue_hunt_solver hunt.launch.py
+
+# Local saved-map integration
+LIBGL_ALWAYS_SOFTWARE=1 ros2 launch \
+  clue_hunt_solver autonomy.launch.py \
+  map:=$HOME/hunt_ws/src/clue_hunt_solver/maps/arena.yaml \
+  gui:=false rviz:=true</pre></div></div>
+  <h2>12. Concrete observed failures</h2>
+  <div class="grid2">
+    <figure class="failure"><img src="screenshots/failure_slam.png" alt="Corrupted duplicate SLAM map"><figcaption><b>SLAM duplication.</b> Rapid motion/turns caused alignment loss and rotated wall copies. Fix: discard map, reduce teleop speed, pause after turns and remap one continuous boundary loop.</figcaption></figure>
+    <figure class="failure"><img src="screenshots/failure_nav.png" alt="Nav2 costmap out of bounds warning"><figcaption><b>Plan but no motion.</b> AMCL/sensor origin was outside an incomplete costmap, leaving <code>/cmd_vel</code> at zero. Fix: complete the arena map and restart localization from the known spawn.</figcaption></figure>
+  </div>
+  <table>
+    <tr><th>Failure</th><th>Cause</th><th>Corrective action</th></tr>
+    <tr><td>QR visible but payload absent</td><td>OpenCV package lacked QUIRC and the code was initially using its decoder.</td><td>Use ZBar first; retain OpenCV and perspective rectification as fallbacks.</td></tr>
+    <tr><td>Robot rotated indefinitely near a target</td><td>Search had no relocation deadline or Nav2 goal timeout.</td><td>Add map-derived search poses, eight local orbit points, a 15 s relocation period and 55 s goal cancellation.</td></tr>
+    <tr><td>Unsafe follower margin risk</td><td>Earlier hard stop at 0.62 m was too close to the 0.6 m limit for noisy estimates.</td><td>Increase hard stop to 0.75 m and keep target at 1.15 m.</td></tr>
+  </table>
+  <h2>13. Submission contents</h2>
+  <div class="grid2"><div><h3>Included</h3><ul><li>Complete <code>clue_hunt_solver/</code> package with source, launch, configuration and tests.</li><li><code>maps/arena.yaml</code> and referenced <code>arena.pgm</code>.</li><li>This five-page PDF, source HTML and original evidence screenshots.</li><li>Top-level README with exact build, run and evaluation commands.</li></ul></div><div><h3>Excluded</h3><ul><li><code>build/</code>, <code>install/</code>, <code>log/</code>, caches and VM files.</li><li>Modified organizer simulation/description packages.</li><li>Credentials, secrets and hidden/practice ground-truth positions.</li><li>Temporary runtime logs and redundant debug captures.</li></ul></div></div>
+  <h2>14. Conclusion</h2>
+  <p>The package implements authenticated clue interpretation, map-frame target geometry, Nav2 leader motion, decoy rejection and an independently sensed follower. It directly addresses the required interfaces and includes the saved map, reproducible test assets, RViz diagnostics and documented corrective engineering for observed failure modes.</p>
+  <div class="callout"><b>Repository readiness.</b> The repository is structured for direct review: source package, map, report, screenshots, tests and concise reproduction instructions are all version controlled.</div>
+  <div class="footer"><span>Autonomous Leader-Follower Clue Hunt</span><span>Page 5 of 5</span></div>
+</section>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# ROS / colcon
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*~
+
+# Runtime captures and temporary maps
+*.bag
+*.db3
+*.tmp
+.tools/
